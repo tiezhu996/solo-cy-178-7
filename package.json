@@ -1,0 +1,13 @@
+{
+  "name": "gb-178-letter-station",
+  "version": "1.0.0",
+  "private": true,
+  "description": "信件驿站 — 全栈匿名投信应用",
+  "scripts": {
+    "test": "node scripts/test-scheduled-delivery.js",
+    "test:scheduled-delivery": "node scripts/test-scheduled-delivery.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

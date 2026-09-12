@@ -27,6 +27,8 @@ app.use((err, _req, res, _next) => {
 startDatabasePlaceholder();
 startScheduler();
 
-app.listen(PORTS.BACKEND, '0.0.0.0', () => {
-  console.log(`[backend] listening on 0.0.0.0:${PORTS.BACKEND}`);
+// PORT=0 lets the OS assign a free port (used by the regression tests so
+// repeated/parallel runs never collide); production keeps its fixed port.
+const server = app.listen(PORTS.BACKEND, '0.0.0.0', () => {
+  console.log(`[backend] listening on 0.0.0.0:${server.address().port}`);
 });
