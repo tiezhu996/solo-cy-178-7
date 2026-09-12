@@ -8,6 +8,7 @@ import { localInputToMs, formatLocalInput, earliestSendAtMs } from '../utils/dat
 export default function RescheduleControl({ letterId, currentScheduledAt, onDone, onError }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState('');
+  const [initialValue, setInitialValue] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -16,12 +17,24 @@ export default function RescheduleControl({ letterId, currentScheduledAt, onDone
     const base = currentScheduledAt && currentScheduledAt > now
       ? currentScheduledAt
       : earliestSendAtMs(now);
-    setValue(formatLocalInput(base));
+    // The picker only resolves to whole minutes, so its string drops the
+    // original seconds. Remember that string: confirming without touching the
+    // picker must keep the exact original delivery time, not move it earlier.
+    const shown = formatLocalInput(base);
+    setValue(shown);
+    setInitialValue(shown);
     setError('');
     setEditing(true);
   };
 
+  const unchanged = value === initialValue;
+
   const save = async () => {
+    if (unchanged) {
+      // No real edit: leave the scheduled time exactly as it was.
+      setEditing(false);
+      return;
+    }
     const ms = localInputToMs(value);
     if (ms == null) {
       setError('请选择送达时间');
@@ -62,7 +75,12 @@ export default function RescheduleControl({ letterId, currentScheduledAt, onDone
         onChange={(e) => setValue(e.target.value)}
         disabled={saving}
       />
-      <button className="icon-btn on" onClick={save} disabled={saving || !value}>
+      <button
+        className="icon-btn on"
+        onClick={save}
+        disabled={saving || !value || unchanged}
+        title={unchanged ? '送达时间未修改' : undefined}
+      >
         {saving ? '提交中…' : LABELS.RESCHEDULE_SAVE}
       </button>
       <button
