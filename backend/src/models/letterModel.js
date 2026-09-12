@@ -76,6 +76,19 @@ const LetterModel = {
     return info.changes > 0;
   },
 
+  // Move a waiting letter to a new delivery time. The conditional UPDATE is
+  // the race guard: a letter delivered in the meantime no longer matches.
+  rescheduleIfScheduled({ id, senderId, scheduledAt }) {
+    const info = db
+      .prepare(
+        `UPDATE letters
+         SET scheduled_at = ?
+         WHERE id = ? AND sender_id = ? AND status = 'scheduled'`
+      )
+      .run(scheduledAt, id, senderId);
+    return info.changes > 0;
+  },
+
   listSentByUser(userId) {
     return db
       .prepare(

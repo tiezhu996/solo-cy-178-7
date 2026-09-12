@@ -64,6 +64,10 @@ module.exports = {
     NOT_DELIVERED: '信件尚未投递',
     CANCELLED: '已取消投递',
     ALREADY_DELIVERED: '信件已经投递，无法取消',
-    NOT_SENDER: '只能取消自己寄出的信'
+    NOT_SENDER: '只能取消自己寄出的信',
+    RESCHEDULED: '送达时间已更新',
+    ALREADY_CANCELLED: '信件已取消，无法改期',
+    NOT_RESCHEDULABLE: '只能改期待投递的信',
+    RESCHEDULE_NOT_SENDER: '只能改期自己寄出的信'
   }
 };

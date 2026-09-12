@@ -17,6 +17,7 @@ export const ENDPOINTS = {
   SKIP_LETTER: (id) => `${API_BASE}/api/letters/${id}/skip`,
   FAVORITE_LETTER: (id) => `${API_BASE}/api/letters/${id}/favorite`,
   CANCEL_LETTER: (id) => `${API_BASE}/api/letters/${id}/cancel`,
+  RESCHEDULE_LETTER: (id) => `${API_BASE}/api/letters/${id}/reschedule`,
   THREAD: (id) => `${API_BASE}/api/letters/${id}/thread`,
   INBOX: `${API_BASE}/api/inbox`
 };
@@ -75,6 +76,10 @@ export const LABELS = {
   PENDING_DELIVERY: '待投递',
   ESTIMATED_DELIVERY: '预计送达',
   CANCEL_DELIVERY: '取消投递',
+  RESCHEDULE: '改期',
+  RESCHEDULE_SAVE: '确认改期',
+  RESCHEDULE_CANCEL: '放弃改期',
+  RESCHEDULED: '送达时间已更新',
   CONFIRM_CANCEL: '确定取消这封信的投递吗？取消后不会再寄出。',
   CANCELLED_BADGE: '已取消',
   SCHEDULED_THREAD_HINT: '这封信还在驿站等候，到点后才会送到对方手中。',

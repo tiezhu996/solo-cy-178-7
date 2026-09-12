@@ -60,6 +60,34 @@ router.post('/:id/cancel', (req, res) => {
   }
 });
 
+router.post('/:id/reschedule', (req, res) => {
+  try {
+    const { scheduledAt } = req.body || {};
+    const scheduledAtMs = Number(scheduledAt);
+    if (!Number.isFinite(scheduledAtMs)) {
+      return res.status(400).json({ error: MESSAGES.SCHEDULED_TIME_INVALID });
+    }
+    const letter = LetterService.reschedule({
+      userId: req.user.id,
+      letterId: Number(req.params.id),
+      scheduledAt: scheduledAtMs
+    });
+    res.json({
+      message: MESSAGES.RESCHEDULED,
+      id: letter.id,
+      status: letter.status,
+      scheduledAt: letter.scheduled_at
+    });
+  } catch (err) {
+    const status =
+      err.code === 'NOT_FOUND' ? 404
+        : err.code === 'FORBIDDEN' ? 403
+          : err.code === 'PAST_TIME' || err.code === 'BAD_REQUEST' ? 400
+            : err.code === 'NOT_RESCHEDULABLE' ? 409 : 500;
+    res.status(status).json({ error: err.message });
+  }
+});
+
 router.post('/:id/reply', (req, res) => {
   try {
     const { content } = req.body || {};

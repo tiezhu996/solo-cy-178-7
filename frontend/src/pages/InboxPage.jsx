@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LABELS, STATUS_TEXT } from '../config/constants.js';
 import { LetterApi } from '../services/letterApi.js';
+import RescheduleControl from '../components/RescheduleControl.jsx';
+import { formatTime } from '../utils/datetime.js';
 
 const TABS = [
   { key: 'received', label: LABELS.RECEIVED },
@@ -9,13 +11,7 @@ const TABS = [
   { key: 'conversations', label: LABELS.CONVERSATIONS }
 ];
 
-function formatTime(ts) {
-  const d = new Date(ts);
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function LetterCard({ item, onOpen, onToggleFavorite, onSkip, onCancel }) {
+function LetterCard({ item, onOpen, onToggleFavorite, onSkip, onCancel, onRescheduled }) {
   const isScheduled = item.status === 'scheduled';
   const isCancelled = item.status === 'cancelled';
   const waiting = isScheduled || isCancelled;
@@ -65,9 +61,16 @@ function LetterCard({ item, onOpen, onToggleFavorite, onSkip, onCancel }) {
           </button>
         )}
         {isScheduled && item.role === 'sent' && (
-          <button className="icon-btn" onClick={() => onCancel(item.id)}>
-            {LABELS.CANCEL_DELIVERY}
-          </button>
+          <>
+            <RescheduleControl
+              letterId={item.id}
+              currentScheduledAt={item.scheduledAt}
+              onDone={onRescheduled}
+            />
+            <button className="icon-btn" onClick={() => onCancel(item.id)}>
+              {LABELS.CANCEL_DELIVERY}
+            </button>
+          </>
         )}
       </div>
     </div>
@@ -165,6 +168,7 @@ export default function InboxPage() {
               onToggleFavorite={toggleFavorite}
               onSkip={skip}
               onCancel={cancel}
+              onRescheduled={() => refresh()}
             />
           ))}
         </div>

@@ -14,6 +14,12 @@ export const LetterApi = {
   cancel(id) {
     return api.request(ENDPOINTS.CANCEL_LETTER(id), { method: 'POST' });
   },
+  reschedule({ id, scheduledAt }) {
+    return api.request(ENDPOINTS.RESCHEDULE_LETTER(id), {
+      method: 'POST',
+      body: JSON.stringify({ scheduledAt })
+    });
+  },
   reply({ id, content }) {
     return api.request(ENDPOINTS.REPLY_LETTER(id), {
       method: 'POST',

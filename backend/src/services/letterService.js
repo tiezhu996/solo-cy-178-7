@@ -65,6 +65,44 @@ const LetterService = {
     return true;
   },
 
+  reschedule({ userId, letterId, scheduledAt }) {
+    if (!Number.isFinite(scheduledAt)) {
+      const err = new Error(MESSAGES.SCHEDULED_TIME_INVALID);
+      err.code = 'BAD_REQUEST';
+      throw err;
+    }
+    if (scheduledAt <= Date.now()) {
+      const err = new Error(MESSAGES.SCHEDULED_TIME_PAST);
+      err.code = 'PAST_TIME';
+      throw err;
+    }
+    const letter = LetterModel.findById(letterId);
+    if (!letter) {
+      const err = new Error(MESSAGES.LETTER_NOT_FOUND);
+      err.code = 'NOT_FOUND';
+      throw err;
+    }
+    if (letter.sender_id !== userId) {
+      const err = new Error(MESSAGES.RESCHEDULE_NOT_SENDER);
+      err.code = 'FORBIDDEN';
+      throw err;
+    }
+    if (letter.status === LETTER_STATUS.CANCELLED) {
+      const err = new Error(MESSAGES.ALREADY_CANCELLED);
+      err.code = 'NOT_RESCHEDULABLE';
+      throw err;
+    }
+    // Conditional UPDATE fails for delivered/replied/skipped letters as well
+    // as for one delivered by the scheduler between the check and the write.
+    const moved = LetterModel.rescheduleIfScheduled({ id: letterId, senderId: userId, scheduledAt });
+    if (!moved) {
+      const err = new Error(MESSAGES.NOT_RESCHEDULABLE);
+      err.code = 'NOT_RESCHEDULABLE';
+      throw err;
+    }
+    return LetterModel.findById(letterId);
+  },
+
   reply({ userId, parentId, content }) {
     const parent = LetterModel.findById(parentId);
     if (!parent) {

@@ -2,8 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { LABELS, STATUS_TEXT } from '../config/constants.js';
 import { LetterApi } from '../services/letterApi.js';
+import RescheduleControl from '../components/RescheduleControl.jsx';
+import { formatTime } from '../utils/datetime.js';
 
-function formatTime(ts) {
+function formatShortTime(ts) {
   const d = new Date(ts);
   const pad = (n) => String(n).padStart(2, '0');
   return `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -116,6 +118,12 @@ export default function ThreadPage() {
             {LABELS.SCHEDULED_THREAD_HINT}
             {data.scheduledAt ? ` ${LABELS.ESTIMATED_DELIVERY} ${formatTime(data.scheduledAt)}` : ''}
           </span>
+          <RescheduleControl
+            letterId={id}
+            currentScheduledAt={data.scheduledAt}
+            onDone={() => load()}
+            onError={() => load()}
+          />
           <button className="secondary-btn" onClick={cancel}>
             {LABELS.CANCEL_DELIVERY}
           </button>
@@ -134,8 +142,8 @@ export default function ThreadPage() {
             <div>{m.content}</div>
             <div className="msg-time">
               {isScheduled && m.fromMe && data.scheduledAt
-                ? `${LABELS.ESTIMATED_DELIVERY} ${formatTime(data.scheduledAt)}`
-                : formatTime(m.createdAt)}
+                ? `${LABELS.ESTIMATED_DELIVERY} ${formatShortTime(data.scheduledAt)}`
+                : formatShortTime(m.createdAt)}
             </div>
           </div>
         ))}
