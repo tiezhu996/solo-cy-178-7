@@ -9,17 +9,23 @@ function localInputToMs(value) {
   return Number.isNaN(d.getTime()) ? null : d.getTime();
 }
 
-// Smallest value accepted by datetime-local, in local time.
-function nowLocalInputValue(padMs = 60 * 1000) {
-  const d = new Date(Date.now() + padMs);
+function formatLocalInput(ms) {
+  const d = new Date(ms);
   const pad = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// Earliest minute-aligned time that is still at least one full minute ahead.
+// Rounding UP (not truncating) is essential near the end of a minute:
+// at 10:30:59 this must yield 10:32, not an already-expired 10:31.
+function earliestSendAtMs(now = Date.now()) {
+  return Math.ceil((now + 60 * 1000) / (60 * 1000)) * (60 * 1000);
 }
 
 export default function ComposePage() {
   const [content, setContent] = useState('');
   const [scheduled, setScheduled] = useState(false);
-  const [sendAt, setSendAt] = useState(nowLocalInputValue());
+  const [sendAt, setSendAt] = useState(formatLocalInput(earliestSendAtMs()));
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [doneInfo, setDoneInfo] = useState(null);
@@ -58,7 +64,7 @@ export default function ComposePage() {
     setDoneInfo(null);
     setContent('');
     setScheduled(false);
-    setSendAt(nowLocalInputValue());
+    setSendAt(formatLocalInput(earliestSendAtMs()));
   };
 
   if (doneInfo) {
@@ -105,7 +111,7 @@ export default function ComposePage() {
             onChange={(e) => {
               setScheduled(e.target.checked);
               setError('');
-              if (e.target.checked) setSendAt(nowLocalInputValue());
+              if (e.target.checked) setSendAt(formatLocalInput(earliestSendAtMs()));
             }}
           />
           {LABELS.SCHEDULE_TOGGLE}
@@ -115,7 +121,7 @@ export default function ComposePage() {
             className="schedule-input"
             type="datetime-local"
             value={sendAt}
-            min={nowLocalInputValue()}
+            min={formatLocalInput(earliestSendAtMs())}
             onChange={(e) => setSendAt(e.target.value)}
           />
         )}
