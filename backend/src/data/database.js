@@ -26,6 +26,8 @@ db.exec(`
     parent_id INTEGER,
     content TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending',
+    scheduled_at INTEGER,
+    delivered_at INTEGER,
     created_at INTEGER NOT NULL,
     FOREIGN KEY (sender_id) REFERENCES users(id),
     FOREIGN KEY (receiver_id) REFERENCES users(id),
@@ -46,5 +48,18 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_letters_receiver ON letters(receiver_id);
   CREATE INDEX IF NOT EXISTS idx_letters_parent ON letters(parent_id);
 `);
+
+// Migration: add scheduling columns to databases created before this feature
+const letterColumns = new Set(db.prepare('PRAGMA table_info(letters)').all().map((c) => c.name));
+if (!letterColumns.has('scheduled_at')) {
+  db.exec('ALTER TABLE letters ADD COLUMN scheduled_at INTEGER');
+}
+if (!letterColumns.has('delivered_at')) {
+  db.exec('ALTER TABLE letters ADD COLUMN delivered_at INTEGER');
+}
+db.exec(
+  `CREATE INDEX IF NOT EXISTS idx_letters_due
+   ON letters(scheduled_at) WHERE status = 'scheduled'`
+);
 
 module.exports = db;

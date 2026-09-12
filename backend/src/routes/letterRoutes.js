@@ -8,17 +8,54 @@ router.use(requireAuth);
 
 router.post('/', (req, res) => {
   try {
-    const { content } = req.body || {};
+    const { content, scheduledAt } = req.body || {};
     if (!content || !content.trim()) {
       return res.status(400).json({ error: '信件内容不能为空' });
     }
+    let scheduledAtMs = null;
+    if (scheduledAt != null && scheduledAt !== '') {
+      scheduledAtMs = Number(scheduledAt);
+      if (!Number.isFinite(scheduledAtMs)) {
+        return res.status(400).json({ error: MESSAGES.SCHEDULED_TIME_INVALID });
+      }
+      if (scheduledAtMs <= Date.now()) {
+        return res.status(400).json({ error: MESSAGES.SCHEDULED_TIME_PAST });
+      }
+    }
     const letter = LetterService.sendRandom({
       senderId: req.user.id,
-      content: content.trim()
+      content: content.trim(),
+      scheduledAt: scheduledAtMs
     });
-    res.json({ message: MESSAGES.LETTER_SENT, id: letter.id });
+    const message = scheduledAtMs
+      ? MESSAGES.LETTER_SCHEDULED
+      : MESSAGES.LETTER_SENT;
+    res.json({
+      message,
+      id: letter.id,
+      status: letter.status,
+      scheduledAt: letter.scheduled_at
+    });
   } catch (err) {
-    const status = err.code === 'NO_USERS' ? 400 : 500;
+    const status =
+      err.code === 'NO_USERS' || err.code === 'PAST_TIME' || err.code === 'BAD_REQUEST'
+        ? 400
+        : 500;
+    res.status(status).json({ error: err.message });
+  }
+});
+
+router.post('/:id/cancel', (req, res) => {
+  try {
+    LetterService.cancel({
+      userId: req.user.id,
+      letterId: Number(req.params.id)
+    });
+    res.json({ message: MESSAGES.CANCELLED });
+  } catch (err) {
+    const status =
+      err.code === 'NOT_FOUND' ? 404 : err.code === 'FORBIDDEN' ? 403
+        : err.code === 'ALREADY_DELIVERED' ? 409 : 500;
     res.status(status).json({ error: err.message });
   }
 });
@@ -37,7 +74,9 @@ router.post('/:id/reply', (req, res) => {
     res.json({ message: MESSAGES.REPLIED, id: reply.id });
   } catch (err) {
     const status =
-      err.code === 'NOT_FOUND' ? 404 : err.code === 'FORBIDDEN' ? 403 : 500;
+      err.code === 'NOT_FOUND' ? 404
+        : err.code === 'FORBIDDEN' ? 403
+          : err.code === 'NOT_DELIVERED' ? 409 : 500;
     res.status(status).json({ error: err.message });
   }
 });
@@ -57,14 +96,22 @@ router.post('/:id/skip', (req, res) => {
 });
 
 router.post('/:id/favorite', (req, res) => {
-  const result = LetterService.toggleFavorite({
-    userId: req.user.id,
-    letterId: Number(req.params.id)
-  });
-  res.json({
-    message: result.favorited ? MESSAGES.FAVORITED : MESSAGES.UNFAVORITED,
-    favorited: result.favorited
-  });
+  try {
+    const result = LetterService.toggleFavorite({
+      userId: req.user.id,
+      letterId: Number(req.params.id)
+    });
+    res.json({
+      message: result.favorited ? MESSAGES.FAVORITED : MESSAGES.UNFAVORITED,
+      favorited: result.favorited
+    });
+  } catch (err) {
+    const status =
+      err.code === 'NOT_FOUND' ? 404
+        : err.code === 'FORBIDDEN' || err.code === 'NOT_DELIVERED' ? 403
+          : 500;
+    res.status(status).json({ error: err.message });
+  }
 });
 
 router.get('/:id/thread', (req, res) => {

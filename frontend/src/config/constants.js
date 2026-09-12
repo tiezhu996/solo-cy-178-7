@@ -16,6 +16,7 @@ export const ENDPOINTS = {
   REPLY_LETTER: (id) => `${API_BASE}/api/letters/${id}/reply`,
   SKIP_LETTER: (id) => `${API_BASE}/api/letters/${id}/skip`,
   FAVORITE_LETTER: (id) => `${API_BASE}/api/letters/${id}/favorite`,
+  CANCEL_LETTER: (id) => `${API_BASE}/api/letters/${id}/cancel`,
   THREAD: (id) => `${API_BASE}/api/letters/${id}/thread`,
   INBOX: `${API_BASE}/api/inbox`
 };
@@ -64,12 +65,27 @@ export const LABELS = {
   REPLY_PLACEHOLDER: '回信给这位陌生人……',
   SUBMIT_REPLY: '寄出回复',
   SENT_FROM_ME: '我寄出',
-  SENT_FROM_STRANGER: '陌生人'
+  SENT_FROM_STRANGER: '陌生人',
+  SCHEDULE_TOGGLE: '定时寄出',
+  SCHEDULE_TIME: '送达时间',
+  SEND_IMMEDIATE_HINT: '不选时间则立即投递',
+  SCHEDULED_DONE: '信已收好在驿站，到点自会送达',
+  WRITE_ANOTHER: '再写一封',
+  GOTO_INBOX: '去看看我的信箱',
+  PENDING_DELIVERY: '待投递',
+  ESTIMATED_DELIVERY: '预计送达',
+  CANCEL_DELIVERY: '取消投递',
+  CONFIRM_CANCEL: '确定取消这封信的投递吗？取消后不会再寄出。',
+  CANCELLED_BADGE: '已取消',
+  SCHEDULED_THREAD_HINT: '这封信还在驿站等候，到点后才会送到对方手中。',
+  CANCELLED_THREAD_HINT: '这封信已取消投递，不会再寄出。'
 };
 
 export const STATUS_TEXT = {
   pending: '待处理',
   delivered: '已送达',
   skipped: '已跳过',
-  replied: '已回复'
+  replied: '已回复',
+  scheduled: '待投递',
+  cancelled: '已取消'
 };

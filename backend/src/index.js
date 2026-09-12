@@ -4,6 +4,7 @@ const { PORTS, ROUTES } = require('./config/constants');
 const authRoutes = require('./routes/authRoutes');
 const letterRoutes = require('./routes/letterRoutes');
 const inboxRoutes = require('./routes/inboxRoutes');
+const { startScheduler } = require('./services/scheduler');
 const { startDatabasePlaceholder } = require('./data/dbPort');
 
 require('./data/database');
@@ -24,6 +25,7 @@ app.use((err, _req, res, _next) => {
 });
 
 startDatabasePlaceholder();
+startScheduler();
 
 app.listen(PORTS.BACKEND, '0.0.0.0', () => {
   console.log(`[backend] listening on 0.0.0.0:${PORTS.BACKEND}`);

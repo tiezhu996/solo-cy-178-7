@@ -25,7 +25,13 @@ module.exports = {
     PENDING: 'pending',
     DELIVERED: 'delivered',
     SKIPPED: 'skipped',
-    REPLIED: 'replied'
+    REPLIED: 'replied',
+    SCHEDULED: 'scheduled',
+    CANCELLED: 'cancelled'
+  },
+
+  SCHEDULER: {
+    TICK_MS: 5000
   },
 
   ROLES: {
@@ -51,6 +57,13 @@ module.exports = {
     FAVORITED: '已收藏',
     UNFAVORITED: '已取消收藏',
     SKIPPED: '已跳过这封信',
-    REPLIED: '回复已送达'
+    REPLIED: '回复已送达',
+    SCHEDULED_TIME_PAST: '定时时间必须晚于当前时间',
+    SCHEDULED_TIME_INVALID: '定时时间格式不正确',
+    LETTER_SCHEDULED: '信件已收好，将在指定时间投递',
+    NOT_DELIVERED: '信件尚未投递',
+    CANCELLED: '已取消投递',
+    ALREADY_DELIVERED: '信件已经投递，无法取消',
+    NOT_SENDER: '只能取消自己寄出的信'
   }
 };

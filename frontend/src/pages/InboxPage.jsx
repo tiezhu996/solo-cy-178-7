@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LABELS, STATUS_TEXT } from '../config/constants.js';
 import { LetterApi } from '../services/letterApi.js';
@@ -15,36 +15,58 @@ function formatTime(ts) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-function LetterCard({ item, onOpen, onToggleFavorite, onSkip }) {
-  const statusClass = item.status === 'skipped' ? 'badge skipped' : 'badge';
+function LetterCard({ item, onOpen, onToggleFavorite, onSkip, onCancel }) {
+  const isScheduled = item.status === 'scheduled';
+  const isCancelled = item.status === 'cancelled';
+  const waiting = isScheduled || isCancelled;
+  const badgeClass = `badge ${isScheduled ? 'scheduled' : isCancelled ? 'cancelled' : item.status === 'skipped' ? 'skipped' : ''}`;
+
   return (
-    <div className="letter-card" onClick={() => onOpen(item.id)}>
+    <div
+      className="letter-card"
+      onClick={() => onOpen(item.id)}
+      style={isCancelled ? { opacity: 0.6 } : undefined}
+    >
       <div className="letter-meta">
         <span>
           {item.role === 'sent' ? LABELS.SENT_FROM_ME : LABELS.SENT_FROM_STRANGER}
           {item.replyCount > 0 ? ` · ${item.replyCount} 封回信` : ''}
         </span>
         <span>
-          {formatTime(item.createdAt)}
-          {item.status && item.status !== 'delivered' && item.status !== 'pending' && (
+          {isScheduled && item.scheduledAt
+            ? `${LABELS.ESTIMATED_DELIVERY} ${formatTime(item.scheduledAt)}`
+            : formatTime(item.deliveredAt || item.createdAt)}
+          {waiting || (item.status !== 'delivered' && item.status !== 'pending') ? (
             <>
               {' '}
-              <span className={statusClass}>{STATUS_TEXT[item.status]}</span>
+              <span className={badgeClass}>{STATUS_TEXT[item.status]}</span>
             </>
-          )}
+          ) : null}
         </span>
       </div>
       <div className="letter-preview">{item.preview}{item.preview.length >= 80 ? '…' : ''}</div>
+      {isScheduled && (
+        <div className="schedule-note">
+          {LABELS.PENDING_DELIVERY} · {LABELS.ESTIMATED_DELIVERY} {formatTime(item.scheduledAt)}
+        </div>
+      )}
       <div className="letter-actions" onClick={(e) => e.stopPropagation()}>
-        <button
-          className={`icon-btn ${item.favorited ? 'on' : ''}`}
-          onClick={() => onToggleFavorite(item.id)}
-        >
-          {item.favorited ? `★ ${LABELS.UNFAVORITE}` : `☆ ${LABELS.FAVORITE}`}
-        </button>
+        {!waiting && (
+          <button
+            className={`icon-btn ${item.favorited ? 'on' : ''}`}
+            onClick={() => onToggleFavorite(item.id)}
+          >
+            {item.favorited ? `★ ${LABELS.UNFAVORITE}` : `☆ ${LABELS.FAVORITE}`}
+          </button>
+        )}
         {item.role === 'received' && item.status !== 'skipped' && item.replyCount === 0 && (
           <button className="icon-btn" onClick={() => onSkip(item.id)}>
             {LABELS.SKIP}
+          </button>
+        )}
+        {isScheduled && item.role === 'sent' && (
+          <button className="icon-btn" onClick={() => onCancel(item.id)}>
+            {LABELS.CANCEL_DELIVERY}
           </button>
         )}
       </div>
@@ -58,19 +80,26 @@ export default function InboxPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const timerRef = useRef(null);
 
-  const refresh = async () => {
+  const refresh = async (silent) => {
     try {
       const result = await LetterApi.inbox();
       setData(result);
     } catch (err) {
-      setError(err.message);
+      if (!silent) setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => {
+    refresh();
+    // Scheduled letters flip to delivered on the server clock; poll so the
+    // list updates without waiting for a manual reload.
+    timerRef.current = setInterval(() => refresh(true), 5000);
+    return () => clearInterval(timerRef.current);
+  }, []);
 
   const toggleFavorite = async (id) => {
     try {
@@ -84,6 +113,17 @@ export default function InboxPage() {
   const skip = async (id) => {
     try {
       await LetterApi.skip(id);
+      refresh();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const cancel = async (id) => {
+    setError('');
+    if (!window.confirm(LABELS.CONFIRM_CANCEL)) return;
+    try {
+      await LetterApi.cancel(id);
       refresh();
     } catch (err) {
       setError(err.message);
@@ -124,6 +164,7 @@ export default function InboxPage() {
               onOpen={(id) => navigate(`/thread/${id}`)}
               onToggleFavorite={toggleFavorite}
               onSkip={skip}
+              onCancel={cancel}
             />
           ))}
         </div>
